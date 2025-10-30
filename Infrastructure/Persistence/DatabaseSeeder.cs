@@ -1,10 +1,12 @@
 ﻿// ECommerceSolution.Infrastructure/Persistence/DatabaseSeeder.cs
 
+
 using Application.Interfaces.Services;
 using ECommerceSolution.Core.Application.Interfaces;
 using ECommerceSolution.Core.Application.Interfaces.Repositories;
 using ECommerceSolution.Core.Application.Interfaces.Services;
 using ECommerceSolution.Core.Domain.Entities;
+using ECommerceSolution.Infrastructure.Persistence.Repositories;
 using System.Linq;
 using System.Threading.Tasks;
 

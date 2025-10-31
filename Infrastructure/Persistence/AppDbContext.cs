@@ -19,6 +19,9 @@ namespace ECommerceSolution.Infrastructure.Persistence
         public DbSet<Order> Orders { get; set; }
         public DbSet<OrderItem> OrderItems { get; set; }
 
+        public DbSet<Cart> Carts { get; set; }
+        public DbSet<CartItem> CartItems { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -58,6 +61,29 @@ namespace ECommerceSolution.Infrastructure.Persistence
                 .WithMany() // Product'ın OrderItem'lara doğrudan navigasyon property'si yok
                 .HasForeignKey(oi => oi.ProductId)
                 .OnDelete(DeleteBehavior.Restrict); // Ürün silinirse, sipariş kalemlerinin korunmasını sağla (Restrict)
+
+
+            // Cart ve User İlişkisi (1:1/1:Ç - 1 Kullanıcının 1 Sepeti olacak )
+            // NOT:  bir kullanıcının sadece tek bir aktif sepeti olacağı için .
+            modelBuilder.Entity<Cart>()
+                .HasOne(c => c.User)
+                .WithMany() // User tarafında Navigation Property zorunlu değil
+                .HasForeignKey(c => c.UserId)
+                .OnDelete(DeleteBehavior.Cascade); // Kullanıcı silinirse sepet de silinsin
+
+            // CartItem ve Cart İlişkisi (Çok:1)
+            modelBuilder.Entity<CartItem>()
+                .HasOne(ci => ci.Cart)
+                .WithMany(c => c.CartItems)
+                .HasForeignKey(ci => ci.CartId)
+                .OnDelete(DeleteBehavior.Cascade); // Sepet silinirse, kalemler de silinir.
+
+            // CartItem ve Product İlişkisi (Çok:1)
+            modelBuilder.Entity<CartItem>()
+                .HasOne(ci => ci.Product)
+                .WithMany() // Product tarafında Navigation Property zorunlu değil
+                .HasForeignKey(ci => ci.ProductId)
+                .OnDelete(DeleteBehavior.Restrict); // Ürün silinirse, sepet ıtem silinmesin (veritabanı hatası vermesin, bu iş kuralını silme servisi yönetecek).
         }
     }
 }

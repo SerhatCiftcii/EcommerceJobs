@@ -22,12 +22,14 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
 builder.Services.AddScoped<IProductRepository, ProductRepository>();
+builder.Services.AddScoped<IOrderRepository, OrderRepository>();
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
 builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
 builder.Services.AddScoped<IJwtService, JwtService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IProductService, ProductService>();
+builder.Services.AddScoped<IOrderService, OrderService>();
 
 //YeniKayıt Admin için 
 builder.Services.AddScoped<IDatabaseSeeder, DatabaseSeeder>();
@@ -144,7 +146,7 @@ app.UseHttpsRedirection();
 
 app.UseAuthentication(); // JWT doğrulama
 app.UseAuthorization();  // Yetki kontrolü
-
+app.UseCors();
 app.MapControllers();
 
 app.Run();

@@ -1,4 +1,4 @@
-﻿// ECommerceSolution.Infrastructure/Services/OrderService.cs
+﻿
 
 using Application.Dtos.OrdersDto;
 using Application.Dtos.OrdersItemDtos;
@@ -114,7 +114,7 @@ namespace ECommerceSolution.Infrastructure.Services
             if (order == null) return false;
 
             // Güvenlik: Sadece izin verilen statü değişimleri yapılabilir
-            // (Basitlik için şimdilik sadece string ataması yapıyoruz)
+            
             order.Status = newStatus;
             order.UpdatedAt = DateTime.UtcNow;
 

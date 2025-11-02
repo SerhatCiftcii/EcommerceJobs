@@ -19,5 +19,13 @@ namespace ECommerceSolution.Core.Application.Interfaces.Repositories
         // Ekstra metotlar
         Task AddRangeAsync(IEnumerable<T> entities);
         void RemoveRange(IEnumerable<T> entities);
+        // IQueryable döndürerek ReportService'in üzerine .Where().ToListAsync() yazmasını sağlıyoruz.
+        IQueryable<T> GetAll();
+       
+        Task<int> CountAsync();
+
+        // Opsiyonel olarak filtreli sayım
+        Task<int> CountAsync(System.Linq.Expressions.Expression<Func<T, bool>> predicate);
+
     }
 }

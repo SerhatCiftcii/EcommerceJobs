@@ -1,16 +1,23 @@
-﻿using ECommerceSolution.Infrastructure.Persistence;
-using Microsoft.EntityFrameworkCore;
+﻿using ECommerceSolution.Api.Authorization;
+using Application.Interfaces.Services;
 using ECommerceSolution.Core.Application.Interfaces;
 using ECommerceSolution.Core.Application.Interfaces.Repositories;
 using ECommerceSolution.Core.Application.Interfaces.Services;
+using ECommerceSolution.Infrastructure.Jobs;
+using ECommerceSolution.Infrastructure.Persistence;
 using ECommerceSolution.Infrastructure.Persistence.Repositories;
 using ECommerceSolution.Infrastructure.Services;
+using Hangfire;
+using Hangfire.Dashboard;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using System.Text;
-using Swashbuckle.AspNetCore.Filters;
-using Application.Interfaces.Services;
 using Microsoft.OpenApi.Models;
+using NUnit.Framework;
+using Swashbuckle.AspNetCore.Filters;
+using System.Text;
+
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -39,7 +46,9 @@ builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IUserManagementService, UserManagementService>();
 //YeniKayıt Admin için 
 builder.Services.AddScoped<IDatabaseSeeder, DatabaseSeeder>();
-
+builder.Services.AddScoped<IDailyReportRepository, DailyReportRepository>();
+builder.Services.AddScoped<IReportService, ReportService>();
+builder.Services.AddTransient<ReportingJobs>();
 
 //  JWT KİMLİK DOĞRULAMA YAPILANDIRMASI
 
@@ -72,8 +81,13 @@ builder.Services.AddAuthentication(options =>
         ClockSkew = TimeSpan.Zero
     };
 });
+builder.Services.AddHangfire(config => config
+    .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
+    .UseRecommendedSerializerSettings()
+    .UseSqlServerStorage(builder.Configuration.GetConnectionString("DefaultConnection"))
+);
 
-
+builder.Services.AddHangfireServer();
 //  SWAGGER + JWT ENTEGRASYONU
 
 builder.Services.AddControllers();
@@ -152,7 +166,34 @@ app.UseHttpsRedirection();
 
 app.UseAuthentication(); // JWT doğrulama
 app.UseAuthorization();  // Yetki kontrolü
-app.UseCors();
-app.MapControllers();
 
+app.UseCors("AllowAll");
+app.MapControllers();
+app.UseHangfireDashboard("/hangfire", new DashboardOptions
+{
+    Authorization = new[] { new HangfireAuthorizationFilter() }
+});
+// 1. Günlük Rapor (Her gün sabah 05:00'te)
+RecurringJob.AddOrUpdate<ReportingJobs>(
+    "DailySalesReport",
+    x => x.CalculateDailyReport(),
+    Cron.Daily(5), // Her gün 05:00
+    new RecurringJobOptions { TimeZone = TimeZoneInfo.FindSystemTimeZoneById("Turkey Standard Time") }
+);
+
+// 2. Aylık Rapor (Her Ayın 1. Günü saat 04:00'te)
+RecurringJob.AddOrUpdate<ReportingJobs>(
+    "MonthlySalesReport",
+    x => x.CalculateMonthlySalesReport(),
+    Cron.Monthly(1, 4), // Ayın 1. günü, 04:00
+    new RecurringJobOptions { TimeZone = TimeZoneInfo.FindSystemTimeZoneById("Turkey Standard Time") }
+);
+
+// 3. Stok Senkronizasyonu (Her Gün Gece Yarısı 03:00'te)
+RecurringJob.AddOrUpdate<ReportingJobs>(
+    "StockSync",
+    x => x.SyncStockQuantities(),
+    Cron.Daily(3),
+    new RecurringJobOptions { TimeZone = TimeZoneInfo.FindSystemTimeZoneById("Turkey Standard Time") }
+);
 app.Run();

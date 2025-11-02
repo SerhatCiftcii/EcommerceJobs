@@ -45,7 +45,7 @@ namespace ECommerceSolution.Infrastructure.Services
                 roleEnum = UserRole.Customer; // Geçersizse Customer olsun
             }
 
-            // Şifreyi hashle (.NET içi hasher kullanıyoruz, BCrypt değil)
+            
             var passwordHash = _passwordHasher.HashPassword(createDto.Password);
 
             var user = new User

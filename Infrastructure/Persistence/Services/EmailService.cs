@@ -69,10 +69,10 @@ namespace ECommerceSolution.Infrastructure.Services
         public Task SendOrderConfirmationEmailAsync(string toEmail, int orderId)
         {
             string subject = $"Siparişiniz Onaylandı: #{orderId}";
-            string body = $"Merhaba, <p>#{orderId} numaralı siparişiniz başarıyla alınmıştır.</p>";
+            string body = $"Merhaba Değerli Müşterimiz, <p>#{orderId} numaralı siparişiniz başarıyla alınmıştır.</p>";
             return SendEmailAsync(toEmail, subject, body);
         }
-
+            
         public Task SendCartReminderEmailAsync(string toEmail, string userName)
         {
             string subject = $"Sepetiniz Sizi Bekliyor, {userName}!";

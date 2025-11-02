@@ -7,6 +7,7 @@ using ECommerceSolution.Core.Application.Interfaces;
 using ECommerceSolution.Core.Application.Interfaces.Repositories;
 using ECommerceSolution.Core.Application.Interfaces.Services;
 using ECommerceSolution.Core.Domain.Entities;
+using Hangfire;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -91,7 +92,7 @@ namespace ECommerceSolution.Infrastructure.Services
 
                 await _cartRepository.AddAsync(cart);
 
-                // ✅ ID'nin oluşması için hemen kaydediyoruz
+                // ID'nin oluşması için hemen kaydediyoruz
                 await _unitOfWork.SaveChangesAsync();
             }
 
@@ -125,6 +126,17 @@ namespace ECommerceSolution.Infrastructure.Services
 
             // Güncel sepeti yeniden yükle (detaylarla birlikte)
             var updatedCart = await _cartRepository.GetCartWithDetailsByUserIdAsync(userId);
+
+            // -----------------------------
+            // Hangfire ile Sepet Hatırlatma
+            // -----------------------------
+            BackgroundJob.Schedule<IEmailService>(
+    emailService => emailService.SendCartReminderEmailAsync(
+        "info@example.com",  // sabit e-posta
+        "Değerli Müşteri"   // sabit isim
+    ),
+    TimeSpan.FromMinutes(1)
+);
 
             return (true, "Ürün sepete eklendi veya güncellendi.", MapToCartDto(updatedCart));
         }

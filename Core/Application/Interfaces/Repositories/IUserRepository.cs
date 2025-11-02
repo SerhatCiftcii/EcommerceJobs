@@ -17,5 +17,6 @@ namespace ECommerceSolution.Core.Application.Interfaces.Repositories
 
         // Raporlama Job'ı için kritik metot: Tarih aralığında kayıt olan kullanıcıları çeker
         Task<IEnumerable<User>> GetUsersByRegistrationDateRangeAsync(DateTime startDate, DateTime endDate);
+        
     }
 }

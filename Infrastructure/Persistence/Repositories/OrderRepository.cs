@@ -12,12 +12,12 @@ namespace ECommerceSolution.Infrastructure.Persistence.Repositories
 {
     public class OrderRepository : GenericRepository<Order>, IOrderRepository
     {
-        
+
         public OrderRepository(AppDbContext context) : base(context)
         {
         }
 
-        
+
 
         public async Task<IEnumerable<Order>> GetOrdersWithDetailsByUserIdAsync(int userId)
         {
@@ -49,6 +49,13 @@ namespace ECommerceSolution.Infrastructure.Persistence.Repositories
                                  .Include(o => o.OrderItems)
                                     .ThenInclude(oi => oi.Product)
                                  .FirstOrDefaultAsync();
+        }
+        public async Task<IEnumerable<Order>> GetOrdersByDateRangeAsync(DateTime startDate, DateTime endDate)
+        {
+            // Siparişleri startDate dahil, endDate'in bir sonraki gününün başlangıcına kadar çeker
+            return await _context.Orders
+                                 .Where(o => o.CreatedAt >= startDate && o.CreatedAt < endDate.AddDays(1))
+                                 .ToListAsync();
         }
     }
 }

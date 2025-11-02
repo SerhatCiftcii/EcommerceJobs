@@ -21,6 +21,7 @@ namespace ECommerceSolution.Infrastructure.Persistence
 
         public DbSet<Cart> Carts { get; set; }
         public DbSet<CartItem> CartItems { get; set; }
+        public DbSet<DailyReport> DailyReports { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -84,6 +85,14 @@ namespace ECommerceSolution.Infrastructure.Persistence
                 .WithMany() // Product tarafında Navigation Property zorunlu değil
                 .HasForeignKey(ci => ci.ProductId)
                 .OnDelete(DeleteBehavior.Restrict); // Ürün silinirse, sepet ıtem silinmesin (veritabanı hatası vermesin, bu iş kuralını silme servisi yönetecek).
+                  // DailyReport decimal precision ayarı             
+            modelBuilder.Entity<DailyReport>()
+                .Property(d => d.TotalSalesAmount)
+                .HasPrecision(18, 2);
+
+            modelBuilder.Entity<DailyReport>()
+                .Property(d => d.AverageOrderValue)
+                .HasPrecision(18, 2);
         }
     }
 }

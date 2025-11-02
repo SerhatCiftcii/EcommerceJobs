@@ -2,35 +2,40 @@
 
 using Application.Dtos.UsersDtos;
 using Application.Interfaces.Services;
-
 using ECommerceSolution.Core.Application.Interfaces;
 using ECommerceSolution.Core.Application.Interfaces.Repositories;
 using ECommerceSolution.Core.Application.Interfaces.Services;
 using ECommerceSolution.Core.Domain.Entities;
+using Hangfire; // << GEREKLİ: Hangfire Client için
 using System.Linq;
 using System.Threading.Tasks;
+
+// Not: using Application.Interfaces.Services; satırı gereksizdir ve kaldırılmıştır, 
+// çünkü IAuthService zaten ECommerceSolution.Core.Application.Interfaces.Services altındadır.
 
 namespace ECommerceSolution.Infrastructure.Services
 {
     public class AuthService : IAuthService
     {
-        // Tüm CRUD işlemleri için Generic Repository'i kullanıyoruz.
         private readonly IGenericRepository<User> _userRepository;
         private readonly IUnitOfWork _unitOfWork;
         private readonly IPasswordHasher _passwordHasher;
         private readonly IJwtService _jwtService;
-        // IEmailService DI ile alınacak olsa da, şimdilik kullanılmayacak (Jobslar için planlandı)
+        private readonly IBackgroundJobClient _jobClient; // << YENİ: Hangfire Job Tetikleyicisi
 
+        // EKSİKSİZ CONSTRUCTOR
         public AuthService(
             IGenericRepository<User> userRepository,
             IUnitOfWork unitOfWork,
             IPasswordHasher passwordHasher,
-            IJwtService jwtService)
+            IJwtService jwtService,
+            IBackgroundJobClient jobClient) // << CONSTRUCTOR'A EKLENDİ
         {
             _userRepository = userRepository;
             _unitOfWork = unitOfWork;
             _passwordHasher = passwordHasher;
             _jwtService = jwtService;
+            _jobClient = jobClient; // << ATAMA YAPILDI
         }
 
         public async Task<(bool Success, string Message)> RegisterAsync(UserRegisterDto model)
@@ -42,47 +47,40 @@ namespace ECommerceSolution.Infrastructure.Services
                 return (false, "Bu e-posta adresi zaten kullanımda.");
             }
 
-            // 2. Şifreyi Hash'le
+            // 2. Şifreyi Hash'le ve Entity oluştur
             var passwordHash = _passwordHasher.HashPassword(model.Password);
 
-            // 3. Entity oluştur (Varsayılan rol: Customer)
             var user = new User
             {
                 Username = model.Username,
                 Email = model.Email,
                 PasswordHash = passwordHash,
-                Role = UserRole.Customer
+                Role = UserRole.Customer,
+               // CreationDate = DateTime.UtcNow // Yeni kullanıcı raporlama için tarih de ekleyelim
             };
 
-            // 4. Kaydet
+            // 3. Kaydet
             await _userRepository.AddAsync(user);
             await _unitOfWork.SaveChangesAsync();
 
-            // Not: EmailService çağrısı veya Job tetikleme buraya gelecektir.
+            // 4. >> YENİ KOD: Hoş Geldin E-postası Job'ını Tetikle (Fire-and-Forget) <<
+            // Bu, hemen arka planda asenkron olarak çalışacaktır.
+            _jobClient.Enqueue<IEmailService>(service => service.SendWelcomeEmailAsync(user.Email, user.Username));
 
-            return (true, "Kayıt başarılı.");
+            return (true, "Kayıt başarılı. Hoş geldin e-postası gönderiliyor...");
         }
 
         public async Task<AuthResponseDto> LoginAsync(UserLoginDto model)
         {
-            // 1. Kullanıcıyı bul
             var user = (await _userRepository.FindAsync(u => u.Email == model.Email)).FirstOrDefault();
 
-            if (user == null)
+            if (user == null || !_passwordHasher.VerifyPassword(user.PasswordHash, model.Password))
             {
                 return new AuthResponseDto { IsAuthenticated = false, Message = "Kullanıcı veya şifre hatalı." };
             }
 
-            // 2. Şifreyi doğrula
-            if (!_passwordHasher.VerifyPassword(user.PasswordHash, model.Password))
-            {
-                return new AuthResponseDto { IsAuthenticated = false, Message = "Kullanıcı veya şifre hatalı." };
-            }
-
-            // 3. JWT Token oluştur
             var token = _jwtService.GenerateToken(user);
 
-            // 4. Başarılı yanıtı döndür
             return new AuthResponseDto
             {
                 IsAuthenticated = true,

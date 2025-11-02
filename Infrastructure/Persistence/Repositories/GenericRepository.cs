@@ -60,5 +60,19 @@ namespace ECommerceSolution.Infrastructure.Persistence.Repositories
         {
             _dbSet.Update(entity);
         }
+        public IQueryable<T> GetAll()
+        {
+            return _dbSet.AsQueryable();
+        }
+        public async Task<int> CountAsync()
+        {
+            return await _dbSet.CountAsync();
+        }
+
+        //  Filtreye göre kayıtları sayar 
+        public async Task<int> CountAsync(Expression<Func<T, bool>> predicate)
+        {
+            return await _dbSet.CountAsync(predicate);
+        }
     }
 }

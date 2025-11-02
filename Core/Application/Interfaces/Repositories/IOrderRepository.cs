@@ -17,5 +17,6 @@ namespace ECommerceSolution.Core.Application.Interfaces.Repositories
 
         // Siparişi, OrderItems ve Product nesneleriyle birlikte ID'ye göre getirir.
         Task<Order> GetOrderWithDetailsAsync(int orderId);
+        Task<IEnumerable<Order>> GetOrdersByDateRangeAsync(DateTime startDate, DateTime endDate);
     }
 }

@@ -7,6 +7,8 @@ using ECommerceSolution.Core.Application.Interfaces;
 using ECommerceSolution.Core.Application.Interfaces.Repositories;
 using ECommerceSolution.Core.Application.Interfaces.Services;
 using ECommerceSolution.Core.Domain.Entities;
+using ECommerceSolution.Infrastructure.Persistence.Repositories;
+using Hangfire;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -18,15 +20,18 @@ namespace ECommerceSolution.Infrastructure.Services
         private readonly IOrderRepository _orderRepository;
         private readonly IGenericRepository<Product> _productRepository; // Stok ve fiyat için
         private readonly IUnitOfWork _unitOfWork;
+        private readonly IUserRepository _userRepository; // Kullanıcı bilgileri için
 
         public OrderService(
             IOrderRepository orderRepository,
             IGenericRepository<Product> productRepository,
-            IUnitOfWork unitOfWork)
+            IUnitOfWork unitOfWork,
+            IUserRepository userRepository) // constructor parametre olarak ekledik
         {
             _orderRepository = orderRepository;
             _productRepository = productRepository;
             _unitOfWork = unitOfWork;
+            _userRepository = userRepository;
         }
 
         public async Task<(bool Success, string Message, OrderDto Order)> CreateOrderAsync(int userId, OrderCreateDto createDto)
@@ -39,29 +44,27 @@ namespace ECommerceSolution.Infrastructure.Services
             {
                 var product = await _productRepository.GetByIdAsync(item.ProductId);
 
-                // Ürün yoksa veya stok yetersizse
                 if (product == null || product.StockQuantity < item.Quantity)
                 {
                     return (false, $"Ürün bulunamadı veya '{product?.Name ?? "Bilinmeyen Ürün"}' için stok yetersiz. İstek: {item.Quantity}, Mevcut: {product?.StockQuantity ?? 0}", null);
                 }
 
-                // OrderItem nesnesini oluştur
                 var orderItem = new OrderItem
                 {
                     ProductId = item.ProductId,
                     Quantity = item.Quantity,
-                    UnitPriceAtPurchase = product.Price // Satın alındığı anki fiyatı kaydet
+                    UnitPriceAtPurchase = product.Price
                 };
                 orderItems.Add(orderItem);
 
                 totalAmount += orderItem.UnitPriceAtPurchase * item.Quantity;
 
-                // 2. Stoktan Düşme (Tracked Entity'yi güncelle)
+                // Stoktan düş
                 product.StockQuantity -= item.Quantity;
                 _productRepository.Update(product);
             }
 
-            // 3. Sipariş (Order) Entity'sini oluştur
+            // 2. Sipariş oluştur
             var order = new Order
             {
                 UserId = userId,
@@ -72,12 +75,27 @@ namespace ECommerceSolution.Infrastructure.Services
                 OrderItems = orderItems
             };
 
-            // 4. Veritabanına kaydet
+            // 3. Veritabanına kaydet
             await _orderRepository.AddAsync(order);
-            await _unitOfWork.SaveChangesAsync(); // Tüm değişiklikler (Order ve Product stokları) tek transaction'da kaydedilir.
+            await _unitOfWork.SaveChangesAsync();
 
-            // 5. Başarılı yanıt DTO'su döndür
             var orderDto = MapOrderToOrderDto(order);
+
+            
+            // 4. Hangfire Job (Null-safe)
+          
+            // Kullanıcı email'ini repository üzerinden alıyoruz
+            var user = await _userRepository.GetByIdAsync(userId);
+            if (user != null && !string.IsNullOrWhiteSpace(user.Email))
+            {
+                BackgroundJob.Schedule<IEmailService>(
+                    emailService => emailService.SendOrderConfirmationEmailAsync(
+                        user.Email,
+                        order.Id
+                    ),
+                    TimeSpan.FromMinutes(1) // 1 dakika sonra gönder
+                );
+            }
 
             return (true, "Sipariş başarıyla oluşturuldu.", orderDto);
         }

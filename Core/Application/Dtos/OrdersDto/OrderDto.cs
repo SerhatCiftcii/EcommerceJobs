@@ -12,6 +12,9 @@ namespace Application.Dtos.OrdersDto
         public int Id { get; set; }
         public DateTime OrderDate { get; set; }
         public int UserId { get; set; }
+        //admin panelinde görülücek alan
+        public string UserName { get; set; }
+        public string UserEmail { get; set; }
         public decimal TotalAmount { get; set; }
         public string Status { get; set; }
         public string ShippingAddress { get; set; }

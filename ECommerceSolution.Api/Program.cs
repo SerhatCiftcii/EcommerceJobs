@@ -1,5 +1,5 @@
-﻿using ECommerceSolution.Api.Authorization;
-using Application.Interfaces.Services;
+﻿using Application.Interfaces.Services;
+using ECommerceSolution.Api.Authorization;
 using ECommerceSolution.Core.Application.Interfaces;
 using ECommerceSolution.Core.Application.Interfaces.Repositories;
 using ECommerceSolution.Core.Application.Interfaces.Services;
@@ -184,8 +184,8 @@ RecurringJob.AddOrUpdate<ReportingJobs>(
 // 2. Aylık Rapor (Her Ayın 1. Günü saat 04:00'te)
 RecurringJob.AddOrUpdate<ReportingJobs>(
     "MonthlySalesReport",
-    x => x.CalculateMonthlySalesReport(),
-    Cron.Monthly(1, 4), // Ayın 1. günü, 04:00
+    x => x.CalculateMonthlyReport(), // parametresiz overload kullanılıyor
+    Cron.Monthly(1, 4),
     new RecurringJobOptions { TimeZone = TimeZoneInfo.FindSystemTimeZoneById("Turkey Standard Time") }
 );
 

@@ -14,13 +14,14 @@ namespace ECommerceSolution.Core.Application.Interfaces.Services
 
         // OKUMA
         Task<IEnumerable<UserDto>> GetAllUsersAsync();
+        Task<UserDto?> GetUserByIdAsync(int userId);
 
         // GÜNCELLEME (Temel Bilgiler)
         Task<bool> UpdateUserDetailsAsync(int userId, UserUpdateDto updateDto);
 
         // ROL GÜNCELLEME
         Task<bool> UpdateUserRoleAsync(int userId, string newRole);
-
+        
         // SİLME
         Task<bool> DeleteUserAsync(int userId);
     }

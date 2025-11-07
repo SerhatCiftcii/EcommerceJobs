@@ -69,10 +69,42 @@ namespace ECommerceSolution.Infrastructure.Services
             }).ToList();
         }
 
-        public Task<MonthlySummaryDto> GetMonthlySummaryAsync(int year, int month)
+        public async Task<MonthlySummaryDto> GetMonthlySummaryAsync(int year, int month)
         {
-            // Aylık özet basitleştirilmiş
-            return Task.FromResult(new MonthlySummaryDto { Year = year, Month = month, TotalMonthlySales = 125000m });
+            var startDate = new DateTime(year, month, 1);
+            var endDate = startDate.AddMonths(1);
+
+            var allReports = await _dailyReportRepository.GetAll()
+                                .AsNoTracking()
+                                .Where(r => r.ReportDate >= startDate && r.ReportDate < endDate)
+                                .ToListAsync();
+
+            // Eğer veri yoksa null yerine sıfır değer döndür
+            if (!allReports.Any())
+            {
+                return new MonthlySummaryDto
+                {
+                    Year = year,
+                    Month = month,
+                    TotalMonthlySales = 0,
+                    TotalMonthlyOrders = 0,
+                    TotalNewUsers = 0,
+                    SalesGrowthRate = 0
+                };
+            }
+
+            var summary = new MonthlySummaryDto
+            {
+                Year = year,
+                Month = month,
+                TotalMonthlySales = allReports.Sum(r => r.TotalSalesAmount),
+                TotalMonthlyOrders = allReports.Sum(r => r.TotalOrderCount),
+                TotalNewUsers = allReports.Sum(r => r.NewUserCount),
+                SalesGrowthRate = 0
+            };
+
+            return summary;
         }
+
     }
 }

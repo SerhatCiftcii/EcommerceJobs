@@ -15,8 +15,8 @@ namespace ECommerceSolution.Core.Application.Interfaces.Services
         Task<DashboardSummaryDto> GetDashboardSummaryAsync();
 
         /// <summary>
-        /// Son N güne ait günlük rapor verilerini (grafikler ve detay tabloları için) çeker.
-        /// </summary>
+        /// 
+        /// </summaryon N güne ait günlük rapor verilerini (grafikler ve detay tabloları için) çeker.>
         /// <param name="days">Geriye dönük çekilecek gün sayısı.</param>
         /// <returns>DailyReportDto listesi.</returns>
         Task<IEnumerable<DailyReportDto>> GetLastNDaysReportsAsync(int days);

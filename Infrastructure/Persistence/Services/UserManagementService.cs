@@ -84,6 +84,21 @@ namespace ECommerceSolution.Infrastructure.Services
                 CreatedAt = u.CreatedAt
             }).ToList();
         }
+        public async Task<UserDto?> GetUserByIdAsync(int userId) 
+        {
+            var user = await _userRepository.GetByIdAsync(userId);
+            if (user == null)
+                return null;
+
+            return new UserDto
+            {
+                Id = user.Id,
+                Username = user.Username,
+                Email = user.Email,
+                Role = user.Role.ToString(),
+                CreatedAt = user.CreatedAt
+            };
+        }
 
         // --- UPDATE USER DETAILS ---
         public async Task<bool> UpdateUserDetailsAsync(int userId, UserUpdateDto updateDto)

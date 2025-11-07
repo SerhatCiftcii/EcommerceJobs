@@ -135,7 +135,22 @@ namespace ECommerceSolution.Api.Controllers
             }
             return Ok(orders);
         }
-
+        /// <summary>
+        /// Admin - Tek bir siparişin detaylarını getirir
+        /// </summary>
+        [HttpGet("admin/details/{id}")]
+        [Authorize(Roles = "Admin")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> GetOrderDetailsForAdmin(int id)
+        {
+            var order = await _orderService.GetOrderDetailsForAdminAsync(id);
+            if (order == null)
+            {
+                return NotFound(new { Message = "Sipariş bulunamadı." });
+            }
+            return Ok(order);
+        }
         /// <summary>
         /// Bir siparişin durumunu günceller. (Admin yetkisi gereklidir)
         /// </summary>
@@ -162,5 +177,6 @@ namespace ECommerceSolution.Api.Controllers
 
             return NoContent(); // 204
         }
+        
     }
 }

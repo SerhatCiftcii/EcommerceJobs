@@ -21,17 +21,19 @@ namespace ECommerceSolution.Infrastructure.Services
         private readonly IGenericRepository<Product> _productRepository; // Stok ve fiyat için
         private readonly IUnitOfWork _unitOfWork;
         private readonly IUserRepository _userRepository; // Kullanıcı bilgileri için
-
+        private readonly IReportService _reportService; // Dashboard raporları için
         public OrderService(
             IOrderRepository orderRepository,
             IGenericRepository<Product> productRepository,
             IUnitOfWork unitOfWork,
-            IUserRepository userRepository) // constructor parametre olarak ekledik
+            IUserRepository userRepository,
+            IReportService reportService)
         {
             _orderRepository = orderRepository;
             _productRepository = productRepository;
             _unitOfWork = unitOfWork;
             _userRepository = userRepository;
+            _reportService = reportService;
         }
 
         public async Task<(bool Success, string Message, OrderDto Order)> CreateOrderAsync(int userId, OrderCreateDto createDto)
@@ -154,16 +156,21 @@ namespace ECommerceSolution.Infrastructure.Services
                 Status = order.Status,
                 ShippingAddress = order.ShippingAddress,
                 PaymentCompleted = order.PaymentCompleted,
-                // OrderItem'ları da DTO'ya dönüştür
+                UserName = order.User?.Username ?? "Bilinmiyor", // 
                 Items = order.OrderItems?.Select(oi => new OrderItemDto
                 {
                     ProductId = oi.ProductId,
-                    // Eğer navigation property yüklendi ise Product Name'i al
                     ProductName = oi.Product?.Name ?? "Bilinmiyor",
                     Quantity = oi.Quantity,
                     UnitPriceAtPurchase = oi.UnitPriceAtPurchase
                 }).ToList() ?? new List<OrderItemDto>()
             };
+        }
+        public async Task<OrderDto> GetOrderDetailsForAdminAsync(int orderId)
+        {
+            var order = await _orderRepository.GetOrderWithDetailsAsync(orderId);
+            if (order == null) return null;
+            return MapOrderToOrderDto(order);
         }
     }
 }

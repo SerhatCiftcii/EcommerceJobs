@@ -108,9 +108,9 @@ namespace ECommerceSolution.Api.Controllers
             return NoContent();
         }
 
-     
 
-      
+
+
         [HttpDelete("{userId}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -124,6 +124,17 @@ namespace ECommerceSolution.Api.Controllers
             }
 
             return NoContent();
+        }
+        [HttpGet("{userId}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> GetUserById(int userId)
+        {
+            var user = await _userManagementService.GetUserByIdAsync(userId);
+            if (user == null)
+                return NotFound(new { Message = "Kullanıcı bulunamadı." });
+
+            return Ok(user);
         }
     }
 }

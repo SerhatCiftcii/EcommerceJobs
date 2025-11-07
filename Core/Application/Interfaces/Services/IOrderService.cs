@@ -24,5 +24,8 @@ namespace ECommerceSolution.Core.Application.Interfaces.Services
 
         // YÖNETİCİ: Sipariş durumunu güncelleme (Örn: Pending -> Shipped)
         Task<bool> UpdateOrderStatusAsync(int orderId, string newStatus);
+
+        Task<OrderDto> GetOrderDetailsForAdminAsync(int orderId);
+
     }
 }
